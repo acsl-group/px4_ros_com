@@ -57,6 +57,28 @@ class OffboardControl : public rclcpp::Node
 public:
 	OffboardControl() : Node("offboard_control")
 	{
+		// Parameters
+		this->declare_parameter("x", rclcpp::PARAMETER_DOUBLE);
+		this->declare_parameter("y", rclcpp::PARAMETER_DOUBLE);
+		this->declare_parameter("z", rclcpp::PARAMETER_DOUBLE);
+		this->declare_parameter("yaw", rclcpp::PARAMETER_DOUBLE);
+
+		if (!this->get_parameter("x", x_)) {
+			x_ = 0.0;
+			RCLCPP_WARN_STREAM(this->get_logger(), "parameter 'x' missing, set default: " << x_);
+		}
+		if (!this->get_parameter("y", y_)) {
+			y_ = 0.0;
+			RCLCPP_WARN_STREAM(this->get_logger(), "parameter 'y' missing, set default: " << y_);
+		}
+		if (!this->get_parameter("z", z_)) {
+			z_ = 0.0;
+			RCLCPP_WARN_STREAM(this->get_logger(), "parameter 'z' missing, set default: " << z_);
+		}
+		if (!this->get_parameter("yaw", yaw_)) {
+			yaw_ = 0.0;
+			RCLCPP_WARN_STREAM(this->get_logger(), "parameter 'yaw' missing, set default: " << yaw_);
+		}
 
 		offboard_control_mode_publisher_ = this->create_publisher<OffboardControlMode>("/fmu/in/offboard_control_mode", 10);
 		trajectory_setpoint_publisher_ = this->create_publisher<TrajectorySetpoint>("/fmu/in/trajectory_setpoint", 10);
@@ -103,6 +125,9 @@ private:
 	void publish_offboard_control_mode();
 	void publish_trajectory_setpoint();
 	void publish_vehicle_command(uint16_t command, float param1 = 0.0, float param2 = 0.0);
+
+	// pose parameters
+	double x_, y_, z_, yaw_;
 };
 
 /**
@@ -149,8 +174,8 @@ void OffboardControl::publish_offboard_control_mode()
 void OffboardControl::publish_trajectory_setpoint()
 {
 	TrajectorySetpoint msg{};
-	msg.position = {0.0, 0.0, -5.0};
-	msg.yaw = -3.14; // [-PI:PI]
+	msg.position = {float(x_), float(y_), float(z_)};
+	msg.yaw = yaw_; // [-PI:PI]
 	msg.timestamp = this->get_clock()->now().nanoseconds() / 1000;
 	trajectory_setpoint_publisher_->publish(msg);
 }
