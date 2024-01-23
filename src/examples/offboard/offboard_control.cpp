@@ -58,31 +58,46 @@ public:
 	OffboardControl() : Node("offboard_control")
 	{
 		// Parameters
+		this->declare_parameter("instance", rclcpp::PARAMETER_INTEGER);
 		this->declare_parameter("x", rclcpp::PARAMETER_DOUBLE);
 		this->declare_parameter("y", rclcpp::PARAMETER_DOUBLE);
 		this->declare_parameter("z", rclcpp::PARAMETER_DOUBLE);
 		this->declare_parameter("yaw", rclcpp::PARAMETER_DOUBLE);
 
+		if (!this->get_parameter("instance", instance_)) {
+			instance_ = 0;
+			RCLCPP_WARN_STREAM(this->get_logger(), "paramter 'instance' missing, set default: " << instance_);
+		} else {
+			RCLCPP_INFO_STREAM(this->get_logger(), "instance: " << instance_);
+		}
 		if (!this->get_parameter("x", x_)) {
 			x_ = 0.0;
 			RCLCPP_WARN_STREAM(this->get_logger(), "parameter 'x' missing, set default: " << x_);
+		} else {
+			RCLCPP_INFO_STREAM(this->get_logger(), "x: " << x_);
 		}
 		if (!this->get_parameter("y", y_)) {
 			y_ = 0.0;
 			RCLCPP_WARN_STREAM(this->get_logger(), "parameter 'y' missing, set default: " << y_);
+		} else {
+			RCLCPP_INFO_STREAM(this->get_logger(), "y: " << y_);
 		}
 		if (!this->get_parameter("z", z_)) {
-			z_ = 0.0;
+			z_ = -3.0;
 			RCLCPP_WARN_STREAM(this->get_logger(), "parameter 'z' missing, set default: " << z_);
+		} else {
+			RCLCPP_INFO_STREAM(this->get_logger(), "z: " << z_);
 		}
 		if (!this->get_parameter("yaw", yaw_)) {
 			yaw_ = 0.0;
 			RCLCPP_WARN_STREAM(this->get_logger(), "parameter 'yaw' missing, set default: " << yaw_);
+		} else {
+			RCLCPP_INFO_STREAM(this->get_logger(), "yaw: " << yaw_);
 		}
 
-		offboard_control_mode_publisher_ = this->create_publisher<OffboardControlMode>("/fmu/in/offboard_control_mode", 10);
-		trajectory_setpoint_publisher_ = this->create_publisher<TrajectorySetpoint>("/fmu/in/trajectory_setpoint", 10);
-		vehicle_command_publisher_ = this->create_publisher<VehicleCommand>("/fmu/in/vehicle_command", 10);
+		offboard_control_mode_publisher_ = this->create_publisher<OffboardControlMode>("fmu/in/offboard_control_mode", 10);
+		trajectory_setpoint_publisher_ = this->create_publisher<TrajectorySetpoint>("fmu/in/trajectory_setpoint", 10);
+		vehicle_command_publisher_ = this->create_publisher<VehicleCommand>("fmu/in/vehicle_command", 10);
 
 		offboard_setpoint_counter_ = 0;
 
@@ -126,8 +141,9 @@ private:
 	void publish_trajectory_setpoint();
 	void publish_vehicle_command(uint16_t command, float param1 = 0.0, float param2 = 0.0);
 
-	// pose parameters
-	double x_, y_, z_, yaw_;
+	// parameters
+	int instance_;				// 'px4_instance' value
+	double x_, y_, z_, yaw_;	// pose
 };
 
 /**
@@ -192,7 +208,7 @@ void OffboardControl::publish_vehicle_command(uint16_t command, float param1, fl
 	msg.param1 = param1;
 	msg.param2 = param2;
 	msg.command = command;
-	msg.target_system = 1;
+	msg.target_system = instance_ + 1;
 	msg.target_component = 1;
 	msg.source_system = 1;
 	msg.source_component = 1;
